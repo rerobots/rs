@@ -6,7 +6,7 @@ Summary
 
 Rust client library for [rerobots](https://rerobots.net/)
 
-Documentation of the current release is at https://docs.rerobots.net/tools/rs
+Documentation of the current release is at https://docs.rs/rerobots
 
 If you want to contribute to development, then read more below, and clone the
 repository at https://github.com/rerobots/rs
