@@ -1,0 +1,39 @@
+[package]
+name = "rerobots"
+description = "Rust library for rerobots"
+homepage = "https://github.com/rerobots/rs"
+repository = "https://github.com/rerobots/rs"
+license = "Apache-2.0"
+version = "0.1.0-devel"
+authors = ["Scott C. Livingston <scott@rerobots.net>"]
+edition = "2018"
+include = [
+    "/src",
+    "/README.md",
+    "/CHANGELOG",
+    "/keys/public.pem",
+]
+
+[dependencies]
+actix = "0.10"
+awc = { version = "2", features = ["openssl"] }
+chrono = "0.4"
+env_logger = "0.8"
+jwt = { version = "0.11", features = ["openssl"] }
+log = "0.4"
+openssl = { version = "0.10", features = ["vendored"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+serde_yaml = "0.8"
+
+[target."cfg(unix)".dependencies]
+openssl-probe = "0.1.4"
+
+[profile.release]
+panic = "abort"
+
+[dev-dependencies]
+assert_cmd = "1.0"
+insta = "1.16.0"
+mockito = "0.30.0"
+tempfile = "3.1"
