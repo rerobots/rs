@@ -1,0 +1,5 @@
+rerobots Rust client library (0.1.0)
+
+  * Move this code to its own crate.
+
+ -- Scott C. Livingston <scott@rerobots.net>  Tue, 20 Feb 2024 17:28:51 -0800
