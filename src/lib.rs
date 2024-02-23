@@ -19,6 +19,10 @@ extern crate log;
 pub mod client;
 
 
+/// Initialize runtime environment.
+///
+/// This includes:
+/// * find certificates for OpenSSL
 pub fn init() {
     #[cfg(unix)]
     {
