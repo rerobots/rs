@@ -212,6 +212,7 @@ pub fn api_search(
 }
 
 
+/// Get list of instances
 pub fn api_instances(
     token: Option<String>,
     include_terminated: bool,
@@ -264,6 +265,7 @@ fn select_instance<S: ToString>(
 }
 
 
+/// Get details of an instance: start time, status, deployment, ...
 pub fn api_instance_info<S: ToString>(
     instance_id: Option<S>,
     token: Option<String>,
@@ -292,6 +294,11 @@ pub fn api_instance_info<S: ToString>(
 }
 
 
+/// Get secret key for SSH access to instance.
+///
+/// This key is available only if it was generated when the instance was
+/// launched. Else (for example, the user included a public key with the
+/// launch request), a not-found error is returned.
 pub fn get_instance_sshkey<S: ToString>(
     instance_id: Option<S>,
     token: Option<String>,
