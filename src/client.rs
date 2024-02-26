@@ -388,6 +388,7 @@ pub fn api_wdeployment_info<S: std::fmt::Display>(
 }
 
 
+/// Start termination of an instance.
 pub fn api_terminate_instance(
     instance_id: Option<&str>,
     token: Option<String>,
@@ -415,6 +416,7 @@ pub fn api_terminate_instance(
 }
 
 
+/// Request new instance from the given deployment or workspace type.
 pub fn api_launch_instance(
     wdid_or_wtype: &str,
     token: Option<String>,
