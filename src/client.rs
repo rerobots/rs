@@ -327,6 +327,7 @@ pub fn get_instance_sshkey<S: ToString>(
 }
 
 
+/// Get details of a workspace deployment: type, region, availability, ...
 pub fn api_wdeployment_info<S: std::fmt::Display>(
     wdeployment_id: S,
     token: Option<String>,
