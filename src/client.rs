@@ -179,6 +179,9 @@ fn create_client(token: Option<String>) -> Result<awc::Client, Box<dyn std::erro
 
 
 /// Search for deployments that match the given `query`.
+///
+/// Performs full text search. If `query == None`, then match all deployments.
+/// Optionally limit results to deployments with workspace type in `types`.
 pub fn api_search(
     query: Option<&str>,
     types: Option<&Vec<&str>>,
