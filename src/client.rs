@@ -269,6 +269,9 @@ fn select_instance<S: ToString>(
 
 
 /// Get details of an instance: start time, status, deployment, ...
+///
+/// If `instance_id` is None, then this command applies to the
+/// current (non-terminated) instance.
 pub fn api_instance_info<S: ToString>(
     instance_id: Option<S>,
     token: Option<String>,
@@ -393,6 +396,9 @@ pub fn api_wdeployment_info<S: std::fmt::Display>(
 
 
 /// Start termination of an instance.
+///
+/// If `instance_id` is None, then this command applies to the
+/// current (non-terminated) instance.
 pub fn api_terminate_instance(
     instance_id: Option<&str>,
     token: Option<String>,
