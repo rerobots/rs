@@ -215,7 +215,7 @@ pub fn api_search(
 }
 
 
-/// Get list of instances
+/// Get list of instances.
 pub fn api_instances(
     token: Option<String>,
     include_terminated: bool,
