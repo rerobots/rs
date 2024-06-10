@@ -1,0 +1,15 @@
+---
+# configuration for GitHub Actions
+name: rerobots Rust client library tests
+on:
+    push:
+    pull_request:
+jobs:
+    build:
+        name: Build
+        runs-on: ubuntu-22.04
+        steps:
+            - uses: actions/checkout@v2
+            - name: Run tests
+              run: |
+                cargo test
