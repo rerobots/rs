@@ -18,7 +18,6 @@ extern crate log;
 
 pub mod client;
 
-
 /// Initialize runtime environment.
 ///
 /// This includes:

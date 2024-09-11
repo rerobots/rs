@@ -26,14 +26,12 @@ use jwt::algorithm::openssl::PKeyWithDigest;
 use jwt::VerifyWithKey;
 use jwt::{Claims, Header, Token};
 
-
 // TODO: this should eventually be placed in a public key store
 #[cfg(not(test))]
 const PUBLIC_KEY: &[u8] = include_bytes!("../keys/public.pem");
 
 #[cfg(test)]
 const PUBLIC_KEY: &[u8] = include_bytes!("../tests/keys/public.pem");
-
 
 struct ClientError {
     msg: String,
@@ -63,7 +61,6 @@ impl ClientError {
     }
 }
 
-
 #[cfg(not(test))]
 fn get_origin() -> String {
     option_env!("REROBOTS_ORIGIN")
@@ -75,7 +72,6 @@ fn get_origin() -> String {
 fn get_origin() -> String {
     mockito::server_url()
 }
-
 
 /// API token
 ///
@@ -160,7 +156,6 @@ impl std::fmt::Display for TokenClaims {
     }
 }
 
-
 fn create_client(token: Option<String>) -> Result<awc::Client, Box<dyn std::error::Error>> {
     let authheader = match token {
         Some(tok) => Some(format!("Bearer {}", tok)),
@@ -176,7 +171,6 @@ fn create_client(token: Option<String>) -> Result<awc::Client, Box<dyn std::erro
     }
     .finish())
 }
-
 
 /// Search for deployments that match the given `query`.
 ///
@@ -214,7 +208,6 @@ pub fn api_search(
     })
 }
 
-
 /// Get list of instances.
 pub fn api_instances(
     token: Option<String>,
@@ -245,7 +238,6 @@ pub fn api_instances(
     })
 }
 
-
 fn select_instance<S: ToString>(
     instance_id: Option<S>,
     token: &Option<String>,
@@ -266,7 +258,6 @@ fn select_instance<S: ToString>(
         }
     }
 }
-
 
 /// Get details of an instance: start time, status, deployment, ...
 ///
@@ -299,7 +290,6 @@ pub fn api_instance_info<S: ToString>(
     })
 }
 
-
 /// Get secret key for SSH access to instance.
 ///
 /// This key is available only if it was generated when the instance was
@@ -331,7 +321,6 @@ pub fn get_instance_sshkey<S: ToString>(
         }
     })
 }
-
 
 /// Get details of a workspace deployment: type, region, availability, ...
 pub fn api_wdeployment_info<S: std::fmt::Display>(
@@ -394,7 +383,6 @@ pub fn api_wdeployment_info<S: std::fmt::Display>(
     })
 }
 
-
 /// Start termination of an instance.
 ///
 /// If `instance_id` is None, then this command applies to the
@@ -424,7 +412,6 @@ pub fn api_terminate_instance(
         }
     })
 }
-
 
 /// Request new instance from the given deployment or workspace type.
 pub fn api_launch_instance(
@@ -466,7 +453,6 @@ pub fn api_launch_instance(
     })
 }
 
-
 #[cfg(test)]
 mod tests {
     use mockito::mock;
@@ -492,7 +478,6 @@ mod tests {
         let wds = res["workspace_deployments"].as_array().unwrap();
         assert_eq!(wds.len(), 0)
     }
-
 
     #[test]
     fn search_with_1() {
@@ -530,7 +515,6 @@ mod tests {
         assert_eq!(wds.len(), 1);
         assert_eq!(wds[0], "82051afa-b331-4b82-8bd4-9eea9ad78241");
     }
-
 
     #[test]
     fn detect_expired_token() {

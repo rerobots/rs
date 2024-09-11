@@ -34,7 +34,7 @@ To perform tests,
 
 To check code style,
 
-    cargo +nightly fmt -- --check
+    cargo fmt -- --check
     cargo clippy --tests -- -D clippy::all
 
 
