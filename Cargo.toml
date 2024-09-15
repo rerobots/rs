@@ -15,10 +15,10 @@ include = [
 ]
 
 [dependencies]
-actix = "0.10"
-awc = { version = "2", features = ["openssl"] }
+actix = "0.13"
+awc = { version = "3.5", features = ["openssl"] }
 chrono = "0.4"
-env_logger = "0.8"
+env_logger = "0.11.5"
 jwt = { version = "0.11", features = ["openssl"] }
 log = "0.4"
 openssl = { version = "0.10", features = ["vendored"] }

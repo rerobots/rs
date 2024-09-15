@@ -20,7 +20,6 @@ use chrono::{TimeZone, Utc};
 
 use openssl::hash::MessageDigest;
 use openssl::pkey::PKey;
-use openssl::ssl::{SslConnector, SslMethod};
 
 use jwt::algorithm::openssl::PKeyWithDigest;
 use jwt::VerifyWithKey;
@@ -163,10 +162,9 @@ fn create_client(token: Option<String>) -> Result<awc::Client, Box<dyn std::erro
             .map(|tok| format!("Bearer {}", tok.into_string().unwrap())),
     };
 
-    let connector = SslConnector::builder(SslMethod::tls())?.build();
-    let client = awc::Client::builder().connector(awc::Connector::new().ssl(connector).finish());
+    let client = awc::Client::builder();
     Ok(match authheader {
-        Some(hv) => client.header("Authorization", hv),
+        Some(hv) => client.add_default_header(("Authorization", hv)),
         None => client,
     }
     .finish())
@@ -191,8 +189,8 @@ pub fn api_search(
 
     let url = format!("{}{}", get_origin(), path);
 
-    let mut sys = System::new("wclient");
-    actix::SystemRunner::block_on(&mut sys, async move {
+    let sys = System::new();
+    actix::SystemRunner::block_on(&sys, async move {
         let client = create_client(token)?;
         let mut resp = client.get(url).send().await?;
         if resp.status() == 200 {
@@ -218,8 +216,8 @@ pub fn api_instances(
         url += "?include_terminated";
     }
 
-    let mut sys = System::new("wclient");
-    actix::SystemRunner::block_on(&mut sys, async {
+    let sys = System::new();
+    actix::SystemRunner::block_on(&sys, async {
         let client = create_client(token)?;
         let mut resp = client.get(url).send().await?;
         if resp.status() == 200 {
@@ -271,8 +269,8 @@ pub fn api_instance_info<S: ToString>(
     let path = format!("/instance/{}", instance_id);
     let url = format!("{}{}", get_origin(), path);
 
-    let mut sys = System::new("wclient");
-    actix::SystemRunner::block_on(&mut sys, async move {
+    let sys = System::new();
+    actix::SystemRunner::block_on(&sys, async move {
         let client = create_client(token)?;
         let mut resp = client.get(url).send().await?;
         if resp.status() == 200 {
@@ -303,8 +301,8 @@ pub fn get_instance_sshkey<S: ToString>(
     let path = format!("/instance/{}/sshkey", instance_id);
     let url = format!("{}{}", get_origin(), path);
 
-    let mut sys = System::new("wclient");
-    actix::SystemRunner::block_on(&mut sys, async move {
+    let sys = System::new();
+    actix::SystemRunner::block_on(&sys, async move {
         let client = create_client(token)?;
         let mut resp = client.get(url).send().await?;
         if resp.status() == 200 {
@@ -330,8 +328,8 @@ pub fn api_wdeployment_info<S: std::fmt::Display>(
     let path = format!("/deployment/{}", wdeployment_id);
     let url = format!("{}{}", get_origin(), path);
 
-    let mut sys = System::new("wclient");
-    actix::SystemRunner::block_on(&mut sys, async move {
+    let sys = System::new();
+    actix::SystemRunner::block_on(&sys, async move {
         let client = create_client(token)?;
         let req = client.get(url);
         let has_api_token = req.headers().contains_key("Authorization");
@@ -395,8 +393,8 @@ pub fn api_terminate_instance(
     let path = format!("/terminate/{}", instance_id);
     let url = format!("{}{}", get_origin(), path);
 
-    let mut sys = System::new("wclient");
-    actix::SystemRunner::block_on(&mut sys, async move {
+    let sys = System::new();
+    actix::SystemRunner::block_on(&sys, async move {
         let client = create_client(token)?;
         debug!("POST {}", path);
         let mut resp = client.post(url).send().await?;
@@ -428,8 +426,8 @@ pub fn api_launch_instance(
         body.insert("sshkey", pk);
     }
 
-    let mut sys = System::new("wclient");
-    actix::SystemRunner::block_on(&mut sys, async move {
+    let sys = System::new();
+    actix::SystemRunner::block_on(&sys, async move {
         let client_req = create_client(token)?.post(url).timeout(td);
         let mut resp = if !body.is_empty() {
             client_req.send_json(&body).await?
