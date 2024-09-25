@@ -27,7 +27,10 @@ use jwt::{Claims, Header, Token};
 
 // TODO: this should eventually be placed in a public key store
 #[cfg(not(test))]
-const PUBLIC_KEY: &[u8] = include_bytes!("../keys/public.pem");
+const PUBLIC_KEY: &[u8] = match option_env!("REROBOTS_PUBLIC_KEY") {
+    Some(k) => k.as_bytes(),
+    None => include_bytes!("../keys/public.pem"),
+};
 
 #[cfg(test)]
 const PUBLIC_KEY: &[u8] = include_bytes!("../tests/keys/public.pem");
