@@ -515,6 +515,8 @@ mod tests {
         let wds = res["workspace_deployments"].as_array().unwrap();
         assert_eq!(wds.len(), 1);
         assert_eq!(wds[0], "82051afa-b331-4b82-8bd4-9eea9ad78241");
+        let info = res["info"][wds[0].as_str().unwrap()].as_object().unwrap();
+        assert_eq!(info["type"], "fixed_misty2");
     }
 
     #[test]
