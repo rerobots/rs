@@ -533,4 +533,14 @@ mod tests {
         let error = TokenClaims::new(&tok).unwrap_err();
         assert_eq!(error, "not a valid signature");
     }
+
+    #[test]
+    fn never_expired() {
+        let tc = TokenClaims {
+            subject: "bilbo".into(),
+            organization: None,
+            expiration: None,
+        };
+        assert!(!tc.is_expired());
+    }
 }
