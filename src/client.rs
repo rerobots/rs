@@ -263,7 +263,8 @@ fn select_instance<S: ToString>(
 /// Get details of an instance: start time, status, deployment, ...
 ///
 /// If `instance_id` is None, then this command applies to the
-/// current (non-terminated) instance.
+/// current (non-terminated) instance. If there is more than one
+/// non-terminated instance, an error is returned.
 pub fn api_instance_info<S: ToString>(
     instance_id: Option<S>,
     token: Option<String>,
