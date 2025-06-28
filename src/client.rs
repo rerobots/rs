@@ -142,7 +142,7 @@ impl std::fmt::Display for TokenClaims {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         writeln!(f, "subject: {}", self.subject)?;
         match &self.organization {
-            Some(org) => writeln!(f, "organization: {}", org)?,
+            Some(org) => writeln!(f, "organization: {org}")?,
             None => writeln!(f, "organization: (none)")?,
         };
         match self.expiration {
@@ -160,7 +160,7 @@ impl std::fmt::Display for TokenClaims {
 
 fn create_client(token: Option<String>) -> Result<awc::Client, Box<dyn std::error::Error>> {
     let authheader = match token {
-        Some(tok) => Some(format!("Bearer {}", tok)),
+        Some(tok) => Some(format!("Bearer {tok}")),
         None => std::env::var_os("REROBOTS_API_TOKEN")
             .map(|tok| format!("Bearer {}", tok.into_string().unwrap())),
     };
@@ -184,7 +184,7 @@ pub fn api_search(
 ) -> Result<serde_json::Value, Box<dyn std::error::Error>> {
     let mut path = "/deployments?info=t".to_string();
     if let Some(q) = query {
-        path.push_str(format!("&q={}", q).as_str());
+        path.push_str(format!("&q={q}").as_str());
     }
     if let Some(t) = types {
         path.push_str(format!("&types={}", t.join(",")).as_str());
@@ -270,7 +270,7 @@ pub fn api_instance_info<S: ToString>(
     token: Option<String>,
 ) -> Result<serde_json::Value, Box<dyn std::error::Error>> {
     let instance_id = select_instance(instance_id, &token)?;
-    let path = format!("/instance/{}", instance_id);
+    let path = format!("/instance/{instance_id}");
     let url = format!("{}{}", get_origin(), path);
 
     let sys = System::new();
@@ -302,7 +302,7 @@ pub fn get_instance_sshkey<S: ToString>(
     token: Option<String>,
 ) -> Result<String, Box<dyn std::error::Error>> {
     let instance_id = select_instance(instance_id, &token)?;
-    let path = format!("/instance/{}/sshkey", instance_id);
+    let path = format!("/instance/{instance_id}/sshkey");
     let url = format!("{}{}", get_origin(), path);
 
     let sys = System::new();
@@ -329,7 +329,7 @@ pub fn api_wdeployment_info<S: std::fmt::Display>(
     wdeployment_id: S,
     token: Option<String>,
 ) -> Result<serde_json::Value, Box<dyn std::error::Error>> {
-    let path = format!("/deployment/{}", wdeployment_id);
+    let path = format!("/deployment/{wdeployment_id}");
     let url = format!("{}{}", get_origin(), path);
 
     let sys = System::new();
@@ -344,7 +344,7 @@ pub fn api_wdeployment_info<S: std::fmt::Display>(
             debug!("resp to GET {}: {}", path, serde_json::to_string(&payload)?);
 
             if has_api_token {
-                let path = format!("{}/rules", path);
+                let path = format!("{path}/rules");
                 let url = format!("{}{}", get_origin(), path);
                 let mut resp = client.get(url).send().await?;
                 if resp.status() == 200 {
@@ -394,7 +394,7 @@ pub fn api_terminate_instance(
     token: Option<String>,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let instance_id = select_instance(instance_id, &token)?;
-    let path = format!("/terminate/{}", instance_id);
+    let path = format!("/terminate/{instance_id}");
     let url = format!("{}{}", get_origin(), path);
 
     let sys = System::new();
@@ -422,7 +422,7 @@ pub fn api_launch_instance(
     public_key: Option<String>,
 ) -> Result<serde_json::Value, Box<dyn std::error::Error>> {
     let td = std::time::Duration::new(10, 0);
-    let path = format!("/new/{}", wdid_or_wtype);
+    let path = format!("/new/{wdid_or_wtype}");
     let url = format!("{}{}", get_origin(), path);
 
     let mut body = HashMap::new();
