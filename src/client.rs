@@ -63,6 +63,13 @@ impl ClientError {
     }
 }
 
+fn parse_error_message(payload: serde_json::Value) -> String {
+    payload["error_message"]
+        .as_str()
+        .expect("Error message from api.rerobots.net should be a string")
+        .to_string()
+}
+
 #[cfg(not(test))]
 fn get_origin() -> String {
     option_env!("REROBOTS_ORIGIN")
@@ -96,7 +103,8 @@ impl TokenClaims {
     pub fn new(api_token: &str) -> Result<TokenClaims, &str> {
         let alg = PKeyWithDigest {
             digest: MessageDigest::sha256(),
-            key: PKey::public_key_from_pem(PUBLIC_KEY).unwrap(),
+            key: PKey::public_key_from_pem(PUBLIC_KEY)
+                .expect("PEM text should be parsed into public key"),
         };
 
         let result: Result<Token<Header, Claims, _>, jwt::error::Error> =
@@ -109,10 +117,19 @@ impl TokenClaims {
             },
         };
         let claims = parsed_tok.claims();
-        let subject = claims.registered.subject.as_ref().unwrap();
+        let subject = claims
+            .registered
+            .subject
+            .as_ref()
+            .ok_or("Token has subject claim")?;
         let expiration = claims.registered.expiration;
         let organization = if claims.private.contains_key("org") {
-            Some(claims.private["org"].as_str().unwrap().into())
+            Some(
+                claims.private["org"]
+                    .as_str()
+                    .expect("org claim is string")
+                    .into(),
+            )
         } else {
             None
         };
@@ -129,7 +146,10 @@ impl TokenClaims {
         match self.expiration {
             Some(exp) => {
                 let now = std::time::SystemTime::now();
-                let utime = now.duration_since(std::time::UNIX_EPOCH).unwrap().as_secs();
+                let utime = now
+                    .duration_since(std::time::UNIX_EPOCH)
+                    .expect("Duration since Unix epoch should be computable")
+                    .as_secs();
                 exp < utime
             }
             None => false,
@@ -150,7 +170,9 @@ impl std::fmt::Display for TokenClaims {
                 write!(
                     f,
                     "expiration: {}",
-                    Utc.timestamp_opt(exp as i64, 0).unwrap()
+                    Utc.timestamp_opt(exp as i64, 0)
+                        .single()
+                        .expect("Expiration (in seconds) should be parsed as timestamp")
                 )
             }
             None => write!(f, "expiration: (never)"),
@@ -161,8 +183,13 @@ impl std::fmt::Display for TokenClaims {
 fn create_client(token: Option<String>) -> Result<awc::Client, Box<dyn std::error::Error>> {
     let authheader = match token {
         Some(tok) => Some(format!("Bearer {tok}")),
-        None => std::env::var_os("REROBOTS_API_TOKEN")
-            .map(|tok| format!("Bearer {}", tok.into_string().unwrap())),
+        None => std::env::var_os("REROBOTS_API_TOKEN").map(|tok| {
+            format!(
+                "Bearer {}",
+                tok.into_string()
+                    .expect("REROBOTS_API_TOKEN variable should be valid string")
+            )
+        }),
     };
 
     let client = awc::Client::builder();
@@ -202,7 +229,7 @@ pub fn api_search(
             Ok(payload)
         } else if resp.status() == 400 {
             let payload: serde_json::Value = serde_json::from_slice(resp.body().await?.as_ref())?;
-            ClientError::newbox(String::from(payload["error_message"].as_str().unwrap()))
+            ClientError::newbox(parse_error_message(payload))
         } else {
             ClientError::newbox(format!("server indicated error: {}", resp.status()))
         }
@@ -232,7 +259,7 @@ pub fn api_instances(
             Ok(payload)
         } else if resp.status() == 400 {
             let payload: serde_json::Value = serde_json::from_slice(resp.body().await?.as_ref())?;
-            ClientError::newbox(String::from(payload["error_message"].as_str().unwrap()))
+            ClientError::newbox(parse_error_message(payload))
         } else {
             ClientError::newbox(format!("server indicated error: {}", resp.status()))
         }
@@ -248,13 +275,18 @@ fn select_instance<S: ToString>(
         Some(inid) => Ok(inid.to_string()),
         None => {
             let payload = api_instances(token, false)?;
-            let instances = payload["workspace_instances"].as_array().unwrap();
+            let instances = payload["workspace_instances"]
+                .as_array()
+                .ok_or("workspace_instances should be array")?;
             if instances.is_empty() {
                 ClientError::newbox("no active instances")
             } else if instances.len() > 1 {
                 ClientError::newbox("ambiguous command because more than one active instance")
             } else {
-                Ok(instances[0].as_str().unwrap().to_string())
+                Ok(instances[0]
+                    .as_str()
+                    .ok_or("Elements of workspace_instances should be strings")?
+                    .to_string())
             }
         }
     }
@@ -285,7 +317,7 @@ pub fn api_instance_info<S: ToString>(
             ClientError::newbox("instance not found")
         } else if resp.status() == 400 {
             let payload: serde_json::Value = serde_json::from_slice(resp.body().await?.as_ref())?;
-            ClientError::newbox(String::from(payload["error_message"].as_str().unwrap()))
+            ClientError::newbox(parse_error_message(payload))
         } else {
             ClientError::newbox(format!("server indicated error: {}", resp.status()))
         }
@@ -312,12 +344,15 @@ pub fn get_instance_sshkey<S: ToString>(
         if resp.status() == 200 {
             let payload: serde_json::Value = serde_json::from_slice(resp.body().await?.as_ref())?;
             debug!("resp to GET {}: {}", path, serde_json::to_string(&payload)?);
-            Ok(payload["key"].as_str().unwrap().to_string())
+            Ok(payload["key"]
+                .as_str()
+                .ok_or("key should be string")?
+                .to_string())
         } else if resp.status() == 404 {
             ClientError::newbox("instance not found")
         } else if resp.status() == 400 {
             let payload: serde_json::Value = serde_json::from_slice(resp.body().await?.as_ref())?;
-            ClientError::newbox(String::from(payload["error_message"].as_str().unwrap()))
+            ClientError::newbox(parse_error_message(payload))
         } else {
             ClientError::newbox(format!("server indicated error: {}", resp.status()))
         }
@@ -357,14 +392,12 @@ pub fn api_wdeployment_info<S: std::fmt::Display>(
                     );
                     payload
                         .as_object_mut()
-                        .unwrap()
+                        .expect("Response is JSON object")
                         .insert("cap".to_string(), rules_payload);
                 } else if resp.status() == 400 {
                     let payload: serde_json::Value =
                         serde_json::from_slice(resp.body().await?.as_ref())?;
-                    return ClientError::newbox(String::from(
-                        payload["error_message"].as_str().unwrap(),
-                    ));
+                    return ClientError::newbox(parse_error_message(payload));
                 } else {
                     return ClientError::newbox(format!(
                         "server indicated error: {}",
@@ -378,7 +411,7 @@ pub fn api_wdeployment_info<S: std::fmt::Display>(
             ClientError::newbox("workspace deployment not found")
         } else if resp.status() == 400 {
             let payload: serde_json::Value = serde_json::from_slice(resp.body().await?.as_ref())?;
-            ClientError::newbox(String::from(payload["error_message"].as_str().unwrap()))
+            ClientError::newbox(parse_error_message(payload))
         } else {
             ClientError::newbox(format!("server indicated error: {}", resp.status()))
         }
@@ -408,7 +441,7 @@ pub fn api_terminate_instance(
             ClientError::newbox("instance not found")
         } else if resp.status() == 400 {
             let payload: serde_json::Value = serde_json::from_slice(resp.body().await?.as_ref())?;
-            ClientError::newbox(String::from(payload["error_message"].as_str().unwrap()))
+            ClientError::newbox(parse_error_message(payload))
         } else {
             ClientError::newbox(format!("server indicated error: {}", resp.status()))
         }
@@ -448,7 +481,7 @@ pub fn api_launch_instance(
             Ok(payload)
         } else if resp.status() == 400 {
             let payload: serde_json::Value = serde_json::from_slice(resp.body().await?.as_ref())?;
-            ClientError::newbox(String::from(payload["error_message"].as_str().unwrap()))
+            ClientError::newbox(parse_error_message(payload))
         } else {
             ClientError::newbox(format!("server indicated error: {}", resp.status()))
         }
@@ -462,8 +495,10 @@ mod tests {
     use super::api_search;
     use super::TokenClaims;
 
+    type TestResult = Result<(), Box<dyn std::error::Error>>;
+
     #[test]
-    fn empty_search() {
+    fn empty_search() -> TestResult {
         let _m = mock("GET", "/deployments?info=t")
             .with_status(200)
             .with_header("content-type", "application/json")
@@ -476,13 +511,16 @@ mod tests {
             )
             .create();
 
-        let res = api_search(None, None, None).unwrap();
-        let wds = res["workspace_deployments"].as_array().unwrap();
-        assert_eq!(wds.len(), 0)
+        let res = api_search(None, None, None)?;
+        let wds = res["workspace_deployments"]
+            .as_array()
+            .ok_or("workspace_deployments should be array")?;
+        assert_eq!(wds.len(), 0);
+        Ok(())
     }
 
     #[test]
-    fn search_with_1() {
+    fn search_with_1() -> TestResult {
         let _m = mock("GET", "/deployments?info=t")
             .with_status(200)
             .with_header("content-type", "application/json")
@@ -512,27 +550,42 @@ mod tests {
             )
             .create();
 
-        let res = api_search(None, None, None).unwrap();
-        let wds = res["workspace_deployments"].as_array().unwrap();
+        let res = api_search(None, None, None)?;
+        let wds = res["workspace_deployments"]
+            .as_array()
+            .ok_or("workspace_deployments should be array")?;
         assert_eq!(wds.len(), 1);
         assert_eq!(wds[0], "82051afa-b331-4b82-8bd4-9eea9ad78241");
-        let info = res["info"][wds[0].as_str().unwrap()].as_object().unwrap();
+        let info = res["info"][wds[0]
+            .as_str()
+            .ok_or("Elements of workspace_deployments should be strings")?]
+        .as_object()
+        .ok_or("info should be JSON object")?;
         assert_eq!(info["type"], "fixed_misty2");
+
+        Ok(())
     }
 
     #[test]
-    fn detect_expired_token() {
+    fn detect_expired_token() -> TestResult {
         const EXPIRED_TOKEN: &str = "eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJzdWIiOiJ0ZXN0X3VzZXIiLCJpc3MiOiJyZXJvYm90cy5uZXQiLCJhdWQiOiJyZXJvYm90cy5uZXQiLCJleHAiOjE2Nzk2ODQ0MjQsIm5iZiI6MTY3OTU5ODAyNH0.R9Z4Y5tVHJiPTGfEjUljIGmzor4SAmUmdXyuvQBF2oc6QVHFfxGD-QnVaDfyB6Q2WbBiMWsvDgsI2X56t_-Cd7tZio-VQLL-AEwu1uTnOnt3aXwYB211M7b5ZEFrNN5BNS00FqnMpOQ5DfWKzYUqzvVV4gbxdPhLD2PUpMvT6-F-9NgtR_Z5VEeR-rzRI1-A0KYP9tWHh8GeEPb4D449wtcp-a-Hy6GHOFGGJupSkiB1aJ0T-b1CPlEDN9uwgEq4N_2hHMXwYiyc5Qpo5PABAB_BhM0CP43ca2M9n67om9oQZHqnkon_RWJDSjNAGCn8aZGSfKv0E2pahXfqjhWn6Eakb_R4VDNFBIy6xAl1i0NT-YDdF8-4kLA0sxIoLnk812LvmoifsFsmuv1cdSAAccYdyMjwyQDNCMjFCSJSR6pwZhpfsaUB1frTXWaFteA8yGf8bkL59i3yWherji7yfRY-aepVSH2Hjw_bHxVIPq3mulrhW0XI8qk6uPS1CB5F4Thqqvf_G-qIx0HJWAzF6zTkoAjhOa-BUIuxGo2w17fxK2RhzoOfMZWSfQqifKdCxhuGNOTpyD7nsK9OQP9_S1krOLSvavWuPfTV5GN-NhmRSAcg8Qcv1UkGguZaAFlHlGOzlw4PI_9qGhIxPj7t-PjHyETdH4IrdilpQkXgZuw";
-        let tc = TokenClaims::new(EXPIRED_TOKEN).unwrap();
+        let tc = TokenClaims::new(EXPIRED_TOKEN)?;
         assert!(tc.is_expired());
         assert_eq!(tc.subject, "test_user");
         assert_eq!(tc.organization, None);
-        assert_eq!(tc.expiration.unwrap(), 1679684424);
+        assert_eq!(tc.expiration, Some(1679684424));
 
         let mut tok = String::from(EXPIRED_TOKEN);
         tok.push('F');
-        let error = TokenClaims::new(&tok).unwrap_err();
+        let error = match TokenClaims::new(&tok) {
+            Ok(_) => {
+                panic!("Error should be detected when parsing broken token text")
+            }
+            Err(e) => e,
+        };
         assert_eq!(error, "not a valid signature");
+
+        Ok(())
     }
 
     #[test]
