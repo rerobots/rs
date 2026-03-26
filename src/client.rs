@@ -64,10 +64,13 @@ impl ClientError {
 }
 
 fn parse_error_message(payload: serde_json::Value) -> String {
-    payload["error_message"]
-        .as_str()
-        .expect("Error message from api.rerobots.net should be a string")
-        .to_string()
+    match payload["error_message"].as_str() {
+        Some(s) => s,
+        None => payload["error"]
+            .as_str()
+            .expect("Error message from api.rerobots.net should be a string"),
+    }
+    .to_string()
 }
 
 #[cfg(not(test))]
