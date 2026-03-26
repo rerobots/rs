@@ -25,6 +25,6 @@ pub mod client;
 pub fn init() {
     #[cfg(unix)]
     {
-        openssl_probe::init_ssl_cert_env_vars();
+        openssl_probe::has_ssl_cert_env_vars();
     }
 }
