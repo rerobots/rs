@@ -269,7 +269,7 @@ pub fn api_instances(
     })
 }
 
-fn select_instance<S: ToString>(
+pub fn select_instance<S: ToString>(
     instance_id: Option<S>,
     token: &Option<String>,
 ) -> Result<String, Box<dyn std::error::Error>> {
